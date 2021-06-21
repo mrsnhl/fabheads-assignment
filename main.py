@@ -16,6 +16,7 @@ from figures import SIZE, BLUE, GRAY, GREEN, DARKGRAY, set_limits, plot_line
 print('Solution by Snehil Saluja. Please keep on closing the windows opening while the code runs to proceed further.')
 
 mesh = trimesh.load('./assignment.stl')
+check_points = []
 
 
 def add_shell(ax, x, y, count, air_gap, shell_width, mode="inner"):
@@ -63,21 +64,38 @@ def plot_maze(ax, line, turn, anyline, air_gap, raster_width):
         return anyline
 
 
+def check_cuts(i, polygon):
+    intersection_line = LineString([(-5000, i), (5000, i)])
+    try:
+        collect = polygon.intersection(intersection_line)
+        return(collect)
+    except:
+        return(0)
+
+
 def infill(ax, polygon, x, y, air_gap, raster_width):
+
+    k = 0
 
     i = min(y) + air_gap + raster_width
     turn = 'odd'
     mainmultiline = []
     mainline = []
+    counter = 0
 
     while(i < (max(y) - air_gap - raster_width)):
-        intersection_line = LineString([(-5000, i), (5000, i)])
-        try:
-            collect = polygon.intersection(intersection_line)
-        except:
-            break
+        if(check_cuts(i, polygon) == 0):
+            continue
+        else:
+            collect = check_cuts(i, polygon)
 
         if(isinstance(collect, MultiLineString)):
+            if(len(check_cuts(i, polygon).geoms) != counter):
+                mainmultiline = [[] for line in list(collect.geoms)]
+                turnarray = ['odd' for line in list(collect.geoms)]
+                counter = len(collect.geoms)
+                continue
+
             if(len(mainline) > 0):
                 mainmultiline = [[] for line in list(collect.geoms)]
                 turnarray = ['odd' for line in list(collect.geoms)]
@@ -87,6 +105,7 @@ def infill(ax, polygon, x, y, air_gap, raster_width):
                 mainline = []
                 turn = 'odd'
             for j, line in enumerate(list(collect.geoms)):
+                # print(j, line)
                 plot_maze(
                     ax, line, turnarray[j], mainmultiline[j], air_gap, raster_width)
                 if(turnarray[j] == 'even'):
@@ -111,7 +130,8 @@ def infill(ax, polygon, x, y, air_gap, raster_width):
         i = i + air_gap + (raster_width)
 
     if(mainline != []):
-        plot_line(ax, LineString(mainline), color=BLUE, linewidth=raster_width)
+        final = LineString(mainline)
+        plot_line(ax, final, color=BLUE, linewidth=raster_width)
         mainline = []
 
 
@@ -135,15 +155,38 @@ def slicer(height, air_gap, width):
     for polygon in polygons:
         x, y = polygon.exterior.xy
 
+        x = np.array(x)
+        y = np.array(y)
+
+        new_x = np.divide((x + y), 2**0.5)
+        new_y = np.divide((y - x), 2**0.5)
+
         shell_exterior = add_shell(
-            ax, x, y, count=1, air_gap=air_gap, shell_width=width, mode="outer")
+            ax, new_x, new_y, count=1, air_gap=air_gap, shell_width=width, mode="outer")
 
     shell_interior = []
 
+    for poly in inside_polygons:
+        x = np.array(x)
+        y = np.array(y)
+
+        new_x = np.divide((x + y), 2**0.5)
+        new_y = np.divide((y - x), 2**0.5)
+
+        [check_points.append(p) for p in new_y if p not in check_points]
+        # print(check_points)
+
     for interior in polygon.interiors:
         x, y = interior.xy
+
+        x = np.array(x)
+        y = np.array(y)
+
+        new_x = np.divide((x + y), 2**0.5)
+        new_y = np.divide((y - x), 2**0.5)
+
         shell_interior.append(
-            add_shell(ax, x, y, count=1, air_gap=air_gap, shell_width=width, mode="inner"))
+            add_shell(ax, new_x, new_y, count=1, air_gap=air_gap, shell_width=width, mode="inner"))
 
     new_polygon = Polygon(shell_exterior, shell_interior)
 
@@ -167,6 +210,9 @@ def slicer(height, air_gap, width):
     ax.legend(custom_lines, ['Outer Loops', 'Inner Loops'])
 
     plt.title('At height - ' + str(height) + " mm")
+
+    plt.xlim(-50, 50)
+    plt.ylim(-75, 75)
 
     plt.show()
 
