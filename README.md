@@ -15,6 +15,12 @@ pip install -r requirements.txt
 python main.py
 ```
 
+## Results
+
+![alt text](Figure_1.png "At Height 10mm")
+![alt text](Figure_2.png "At Height 30mm")
+![alt text](Figure_3.png "At Height 50mm")
+
 ## Known Bugs (can be dealt with if given time)
  1. Places where the boundaries are too close (less than the raster width) is taken to be continuous
 
