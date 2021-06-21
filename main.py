@@ -13,8 +13,6 @@ from descartes import PolygonPatch
 
 from figures import SIZE, BLUE, GRAY, GREEN, DARKGRAY, set_limits, plot_line
 
-from sympy import Point, Line
-
 print('Solution by Snehil Saluja. Please keep on closing the windows opening while the code runs to proceed further.')
 
 mesh = trimesh.load('./assignment.stl')
@@ -26,8 +24,12 @@ def add_shell(ax, x, y, count, air_gap, shell_width, mode="inner"):
 
     if(mode == "inner"):
         shell = +1
+        color = GREEN
+        loc = 'left'
     elif(mode == "outer"):
         shell = -1
+        color = DARKGRAY
+        loc = 'right'
 
     for i in range(1, count+1):
         if(mode == "inner"):
@@ -45,17 +47,17 @@ def add_shell(ax, x, y, count, air_gap, shell_width, mode="inner"):
     return offset
 
 
-def plot_maze(ax, line, turn, anyline, air_gap):
+def plot_maze(ax, line, turn, anyline, air_gap, raster_width):
 
     if(len(list(line.coords)) > 0):
         coords = list(line.coords)
         if(turn == 'odd'):
-            anyline.append((coords[0][0]+air_gap, coords[0][1]))
-            anyline.append((coords[1][0]-air_gap, coords[1][1]))
+            anyline.append((coords[0][0]+air_gap + raster_width, coords[0][1]))
+            anyline.append((coords[1][0]-air_gap - raster_width, coords[1][1]))
             turn = 'even'
         elif(turn == 'even'):
-            anyline.append((coords[1][0]-air_gap, coords[1][1]))
-            anyline.append((coords[0][0]+air_gap, coords[0][1]))
+            anyline.append((coords[1][0]-air_gap - raster_width, coords[1][1]))
+            anyline.append((coords[0][0]+air_gap + raster_width, coords[0][1]))
             turn = 'odd'
 
         return anyline
@@ -63,12 +65,12 @@ def plot_maze(ax, line, turn, anyline, air_gap):
 
 def infill(ax, polygon, x, y, air_gap, raster_width):
 
-    i = min(y) + 4*air_gap
+    i = min(y) + air_gap + raster_width
     turn = 'odd'
     mainmultiline = []
     mainline = []
 
-    while(i < (max(y) - 4*air_gap)):
+    while(i < (max(y) - air_gap - raster_width)):
         intersection_line = LineString([(-5000, i), (5000, i)])
         try:
             collect = polygon.intersection(intersection_line)
@@ -86,7 +88,7 @@ def infill(ax, polygon, x, y, air_gap, raster_width):
                 turn = 'odd'
             for j, line in enumerate(list(collect.geoms)):
                 plot_maze(
-                    ax, line, turnarray[j], mainmultiline[j], air_gap + raster_width/2)
+                    ax, line, turnarray[j], mainmultiline[j], air_gap, raster_width)
                 if(turnarray[j] == 'even'):
                     turnarray[j] = 'odd'
                 elif(turnarray[j] == 'odd'):
@@ -100,7 +102,7 @@ def infill(ax, polygon, x, y, air_gap, raster_width):
             if(mainmultiline != []):
                 mainmultiline = []
                 turn = 'odd'
-            plot_maze(ax, collect, turn, mainline, air_gap + raster_width/2)
+            plot_maze(ax, collect, turn, mainline, air_gap, raster_width)
             if(turn == 'even'):
                 turn = 'odd'
             elif(turn == 'odd'):
@@ -154,17 +156,15 @@ def slicer(height, air_gap, width):
         new_x = np.divide((x + y), 2**0.5)
         new_y = np.divide((y - x), 2**0.5)
 
-        sorted_y = np.sort(list(set([round(num, 4) for num in new_y])))
-
-        infill(ax, new_polygon, x, y,
+        infill(ax, new_polygon, new_x, new_y,
                air_gap=air_gap, raster_width=width)
 
         ax.axis('equal')
 
-    # custom_lines = [Line2D([0], [0], color='black', lw=2),
-    #                 Line2D([0], [0], color='green', lw=2)]
+    custom_lines = [Line2D([0], [0], color='black', lw=2),
+                    Line2D([0], [0], color='green', lw=2)]
 
-    # ax.legend(custom_lines, ['Outer Loops', 'Inner Loops'])
+    ax.legend(custom_lines, ['Outer Loops', 'Inner Loops'])
 
     plt.title('At height - ' + str(height) + " mm")
 
@@ -179,7 +179,7 @@ def assignment_new():
     print('Running for step heights 20 mm cross sections')
 
     for i in range(10, height+1, 20):
-        slicer(i, air_gap=0.5, width=1)
+        slicer(i, air_gap=0.5, width=0.5)
 
 
 def main():

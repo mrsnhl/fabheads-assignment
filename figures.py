@@ -23,3 +23,11 @@ def plot_line(ax, ob, color=GRAY, zorder=1, linewidth=3, alpha=1):
                          solid_capstyle='butt', zorder=zorder, alpha=alpha)
 
     ax.add_line(line)
+
+
+def set_limits(ax, x0, xN, y0, yN):
+    ax.set_xlim(x0, xN)
+    ax.set_xticks(range(x0, xN+1))
+    ax.set_ylim(y0, yN)
+    ax.set_yticks(range(y0, yN+1))
+    ax.set_aspect("equal")
