@@ -231,6 +231,8 @@ def slicer(height, shells, air_gap, width):
 
     # ani = FuncAnimation(fig, plot_line)
 
+    plt.savefig("Figure_" + str(int(height/10) + 1) + ".png")
+
     plt.show()
 
 
