@@ -9,15 +9,6 @@ Use the package manager [pip](https://pip.pypa.io/en/stable/) to install the dep
 ```bash
 pip install -r requirements.txt
 ```
-
-OR 
-
-You can simply use my existing virtual environment.
-
-```bash
-source fabheads-venv/bin/activate
-```
-
 ## Running the code
 
 ```bash
