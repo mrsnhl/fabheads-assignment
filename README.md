@@ -12,7 +12,7 @@ pip install -r requirements.txt
 ## Running the code
 
 ```bash
-python plot.py
+python main.py
 ```
 
 ## Known Bugs (can be dealt with if given time)
