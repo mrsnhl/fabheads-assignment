@@ -9,6 +9,8 @@ from shapely.geometry import LineString, LinearRing, MultiLineString, Polygon
 import numpy as np
 import math
 
+from matplotlib.animation import FuncAnimation
+
 from descartes import PolygonPatch
 
 from figures import SIZE, BLUE, GRAY, GREEN, DARKGRAY, set_limits, plot_line
@@ -70,6 +72,7 @@ def check_cuts(i, polygon):
         collect = polygon.intersection(intersection_line)
         return(collect)
     except:
+        print(polygon)
         return(0)
 
 
@@ -93,29 +96,35 @@ def infill(ax, polygon, x, y, air_gap, raster_width):
             if(len(check_cuts(i, polygon).geoms) != counter):
                 mainmultiline = [[] for line in list(collect.geoms)]
                 turnarray = ['odd' for line in list(collect.geoms)]
+                plot_or_not = [True for line in list(collect.geoms)]
                 counter = len(collect.geoms)
                 continue
 
             if(len(mainline) > 0):
                 mainmultiline = [[] for line in list(collect.geoms)]
                 turnarray = ['odd' for line in list(collect.geoms)]
+                plot_or_not = [True for line in list(collect.geoms)]
                 final = LineString(mainline)
                 plot_line(ax, final,
                           color=BLUE, linewidth=raster_width)
                 mainline = []
                 turn = 'odd'
+
             for j, line in enumerate(list(collect.geoms)):
                 # print(j, line)
-                plot_maze(
+                distance = plot_maze(
                     ax, line, turnarray[j], mainmultiline[j], air_gap, raster_width)
+                if(((distance[-2][0] - distance[-1][0])**2 + (distance[-2][1] - distance[-1][1])**2)**0.5 < raster_width):
+                    plot_or_not[j] = False
                 if(turnarray[j] == 'even'):
                     turnarray[j] = 'odd'
                 elif(turnarray[j] == 'odd'):
                     turnarray[j] = 'even'
             for j, line in enumerate(list(collect.geoms)):
                 final = LineString(mainmultiline[j])
-                plot_line(ax, final,
-                          color=BLUE, linewidth=raster_width)
+                if (plot_or_not[j] == True):
+                    plot_line(ax, final,
+                              color=BLUE, linewidth=raster_width)
 
         elif(isinstance(collect, LineString)):
             if(mainmultiline != []):
@@ -135,7 +144,7 @@ def infill(ax, polygon, x, y, air_gap, raster_width):
         mainline = []
 
 
-def slicer(height, air_gap, width):
+def slicer(height, shells, air_gap, width):
 
     originx = [0, height, 0]
     normalx = [0, 1, 0]
@@ -162,7 +171,7 @@ def slicer(height, air_gap, width):
         new_y = np.divide((y - x), 2**0.5)
 
         shell_exterior = add_shell(
-            ax, new_x, new_y, count=1, air_gap=air_gap, shell_width=width, mode="outer")
+            ax, new_x, new_y, count=shells, air_gap=air_gap, shell_width=width, mode="outer")
 
     shell_interior = []
 
@@ -186,9 +195,11 @@ def slicer(height, air_gap, width):
         new_y = np.divide((y - x), 2**0.5)
 
         shell_interior.append(
-            add_shell(ax, new_x, new_y, count=1, air_gap=air_gap, shell_width=width, mode="inner"))
+            add_shell(ax, new_x, new_y, count=shells, air_gap=air_gap, shell_width=width, mode="inner"))
 
-    new_polygon = Polygon(shell_exterior, shell_interior)
+    new_polygon = Polygon(shell_exterior)
+    for p in shell_interior:
+        new_polygon = new_polygon.symmetric_difference(Polygon(p))
 
     for polygon in polygons:
 
@@ -204,15 +215,21 @@ def slicer(height, air_gap, width):
 
         ax.axis('equal')
 
-    custom_lines = [Line2D([0], [0], color='black', lw=2),
-                    Line2D([0], [0], color='green', lw=2)]
+    custom_lines = [Line2D([0], [0], color='black', lw=1),
+                    Line2D([0], [0], color='green', lw=1),
+                    Line2D([0], [0], color='black', lw=3),
+                    Line2D([0], [0], color='green', lw=3),
+                    Line2D([0], [0], color=BLUE, lw=3)]
 
-    ax.legend(custom_lines, ['Outer Loops', 'Inner Loops'])
+    ax.legend(custom_lines, ['Outer Loops', 'Inner Loops',
+              'Outer Shells', 'Inner Shells', 'Infill Maze'])
 
     plt.title('At height - ' + str(height) + " mm")
 
     plt.xlim(-50, 50)
     plt.ylim(-75, 75)
+
+    # ani = FuncAnimation(fig, plot_line)
 
     plt.show()
 
@@ -222,10 +239,12 @@ def assignment_new():
     print('Please enter the height of figure in mm (enter 50 for the figure given in assignment)')
     height = int(input())
 
-    print('Running for step heights 20 mm cross sections')
+    print('Running for step heights 10 mm cross sections')
 
-    for i in range(10, height+1, 20):
-        slicer(i, air_gap=0.5, width=0.5)
+    threed = [0 for i in range(0, height+1, 10)]
+
+    for i in range(0, height+1, 10):
+        slicer(i, shells=1, air_gap=0.5, width=0.5)
 
 
 def main():

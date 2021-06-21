@@ -22,7 +22,7 @@ def plot_line(ax, ob, color=GRAY, zorder=1, linewidth=3, alpha=1):
     line = LineDataUnits(x, y, color=color, linewidth=linewidth,
                          solid_capstyle='butt', zorder=zorder, alpha=alpha)
 
-    ax.add_line(line)
+    return ax.add_line(line)
 
 
 def set_limits(ax, x0, xN, y0, yN):
